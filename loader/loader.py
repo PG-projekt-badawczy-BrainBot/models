@@ -1,10 +1,10 @@
 import numpy as np
 import re
-from os import PathLike, path
+from os import PathLike
 import os
 from collections import defaultdict
 
-from loader.dataset_creator import EDFDatasetCreator
+from .dataset_creator import EDFDatasetCreator
 
 def load_test_data(path: PathLike):
     dc = EDFDatasetCreator(path, 128, 0)

@@ -8,7 +8,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report
 from MSHCNN import MSHCNN
 from torch.utils.data import Dataset, DataLoader
-from loader.loader import load_patient_dataset
+from loader import load_patient_dataset
 from sklearn.metrics import confusion_matrix
 
 

@@ -247,3 +247,5 @@ fabric.properties
 .pypirc
 
 /.idea/
+
+*.pth
