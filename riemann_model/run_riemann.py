@@ -11,6 +11,7 @@ from sklearn.metrics import accuracy_score
 import random
 
 """
+# probably best phisical aligment of electrodes
 electrodes= [
     'FC3', 'FC4', 'FC1', 'FC2',
     'C3', 'C4', 'C1', 'C2',
@@ -18,9 +19,69 @@ electrodes= [
     'P5', "P6", "FC6"
 ]
 """
+# best electrodes found with genetic algorithm
+elecdrodes = ['FC5', 'CP2', 'P8', 'FC2', 'CPz', 'Cz', 'F6', 'AF3', 'PO8', 'Fpz', 'FT7', 'CP3', 'FC6', 'PO3', 'F1', 'TP8', 'T10', 'T8', 'FC4', 'POz', 'CP6', 'FT8', 'Fp1', 'C4', 'P6', 'AF4', 'F2', 'P2', 'TP7', 'CP4', 'Oz', 'O1']
+
+def genetic_search_electrodes(subject_id='S003', n_generations=10, pop_size=20, n_channels=32, mutation_rate=0.1):
+    data_dir = r"C:\Users\kasia\projekt_badawczy\eeg-motor-movementimagery-dataset-1.0.0\files"
+    raw = PhysionetDataLoader(data_dir).load_subject_data(subject_id)
+    all_channels = raw.ch_names
+    n_total_channels = len(all_channels)
+
+    def create_individual():
+        return random.sample(range(n_total_channels), n_channels)
+
+    def evaluate(individual):
+        selected_electrodes = [all_channels[i] for i in individual]
+        X_train, X_test, y_train, y_test = preprocess(selected_electrodes)
+        model = SVC(C=5.5, gamma='scale', kernel='rbf')
+        model.fit(X_train, y_train)
+        acc = accuracy_score(y_test, model.predict(X_test))
+        return acc
+
+    def crossover(parent1, parent2):
+        cut = random.randint(1, n_channels - 1)
+        child = parent1[:cut] + [gene for gene in parent2 if gene not in parent1[:cut]]
+        return child[:n_channels]
+
+    def mutate(individual):
+        if random.random() < mutation_rate:
+            idx = random.randint(0, n_channels - 1)
+            new_gene = random.choice([i for i in range(n_total_channels) if i not in individual])
+            individual[idx] = new_gene
+        return individual
+
+    population = [create_individual() for _ in range(pop_size)]
+    scores = [evaluate(ind) for ind in population]
+
+    for generation in range(n_generations):
+        print(f"\nGeneration {generation+1}")
+        sorted_pop = sorted(zip(population, scores), key=lambda x: x[1], reverse=True)
+        population, scores = zip(*sorted_pop)
+        population, scores = list(population), list(scores)
+
+        print(f"Best accuracy: {scores[0]:.4f} | Electrodes: {[all_channels[i] for i in population[0]]}")
+
+        # Elitism: keep top 2
+        new_population = population[:2]
+
+        # Generate new children
+        while len(new_population) < pop_size:
+            parents = random.sample(population[:10], 2)
+            child = crossover(parents[0], parents[1])
+            child = mutate(child)
+            new_population.append(child)
+
+        population = new_population
+        scores = [evaluate(ind) for ind in population]
+
+    best = max(zip(population, scores), key=lambda x: x[1])
+    best_electrodes = [all_channels[i] for i in best[0]]
+    print(f"\nBest electrode set: {best_electrodes}")
+    print(f"Final accuracy: {best[1]:.4f}")
 
 
-def random_search_electrodes(subject_id='S003', n_iter=50, n_channels=16):
+def random_search_electrodes(subject_id='S003', n_iter=3, n_channels=32):
     data_dir = r"C:\Users\kasia\projekt_badawczy\eeg-motor-movementimagery-dataset-1.0.0\files"
     raw = PhysionetDataLoader(data_dir).load_subject_data(subject_id)
     all_channels = raw.ch_names
@@ -51,7 +112,7 @@ def random_search_electrodes(subject_id='S003', n_iter=50, n_channels=16):
 
 
 def main():
-    X_train, X_test, y_train, y_test = preprocess()
+    X_train, X_test, y_train, y_test = preprocess(elecdrodes)
     Ctest = [5.5]
     for c in Ctest:
         print('x'*50)
@@ -106,5 +167,5 @@ def preprocess(electrodes=None):
     return X_train, X_test, y_train, y_test
 
 if __name__ == '__main__':
-    random_search_electrodes()
-    #main()
+    #genetic_search_electrodes()
+    main()
